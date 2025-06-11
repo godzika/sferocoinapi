@@ -1,0 +1,10 @@
+nelmio_cors:
+    defaults:
+        allow_origin: ['http://localhost:3000', 'https://sferocoin.ge', 'https://wallet.sferocoin.ge']
+        allow_credentials: true
+        allow_headers: ['Content-Type', 'Authorization']
+        allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+        max_age: 3600
+    paths:
+        '^/api/': ~
+

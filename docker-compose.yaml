@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - .:/var/www
+    networks:
+      - sfero-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: sferoapi-nginx
+    restart: always
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    environment:
+      - VIRTUAL_HOST=api.sferocoin.ge
+      - LETSENCRYPT_HOST=api.sferocoin.ge
+      - LETSENCRYPT_EMAIL=contact@sferocoin.com
+    networks:
+      - sfero-net
+
+networks:
+  sfero-net:
+    external: true
+
