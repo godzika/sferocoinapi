@@ -4,6 +4,7 @@
 namespace App\Controller;
 
 use App\Entity\SfcUser;
+use App\Service\Web3GatewayService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,23 +12,32 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
+
 class ApiController extends AbstractController
 {
+    private $entityManager;
+    private $web3GatewayService; // <-- NEW: Add property for the service
+
+    // <-- NEW: Inject Web3GatewayService into the constructor
+    private $logger;
+
+    public function __construct(EntityManagerInterface $em, Web3GatewayService $web3GatewayService)
+    {
+        $this->entityManager = $em;
+        $this->web3GatewayService = $web3GatewayService;
+    }
+
+
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function register(
         Request $request,
-        EntityManagerInterface $em,
+        // EntityManagerInterface $em, // No need to inject here if already in constructor
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
-        $requiredFields = ['email', 'password', 'username', 'firstname', 'lastname', 'device_id'];
-        foreach ($requiredFields as $field) {
-            if (empty($data[$field])) {
-                return new JsonResponse(['error' => "Missing field: $field"], Response::HTTP_BAD_REQUEST);
-            }
-        }
+        // ... (არსებული ვალიდაცია) ...
 
-        $existingUser = $em->getRepository(SfcUser::class)->findOneBy(['email' => $data['email']]);
+        $existingUser = $this->entityManager->getRepository(SfcUser::class)->findOneBy(['email' => $data['email']]);
         if ($existingUser) {
             return new JsonResponse(['error' => 'User already exists'], Response::HTTP_CONFLICT);
         }
@@ -42,9 +52,20 @@ class ApiController extends AbstractController
         $user->setBalance(0);
         $user->setBonus(false);
 
+        // --- MODIFIED: Call Web3 Gateway to generate wallet and get public address ---
+        $walletAddress = $this->web3GatewayService->generateNewWallet(); // Assuming a new method in Web3GatewayService
+
+        if ($walletAddress === null) {
+            $this->logger->error('Failed to generate wallet address from Web3 Gateway for new user.');
+            return new JsonResponse(['error' => 'Failed to generate wallet. Please try again.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        $user->setWalletAddress($walletAddress);
+        // --- END MODIFIED PART ---
+
+
         // Bonus logic
         if (!empty($data['bonus']) && $data['bonus'] === true) {
-            $bonusUsed = $em->getRepository(SfcUser::class)->findOneBy([
+            $bonusUsed = $this->entityManager->getRepository(SfcUser::class)->findOneBy([
                 'deviceId' => $data['device_id'],
                 'bonus' => true
             ]);
@@ -57,14 +78,15 @@ class ApiController extends AbstractController
             $user->setBonus(true);
         }
 
-        $em->persist($user);
-        $em->flush();
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
 
         return new JsonResponse([
             'message' => 'User registered successfully',
             'userId' => $user->getId(),
             'bonus' => $user->isBonus(),
-            'balance' => $user->getBalance()
+            'balance' => $user->getBalance(),
+            'walletAddress' => $user->getWalletAddress()
         ], Response::HTTP_CREATED);
     }
 

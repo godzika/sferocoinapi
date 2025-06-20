@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250509095322 extends AbstractMigration
+final class Version20250613080019 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -21,7 +21,7 @@ final class Version20250509095322 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql(<<<'SQL'
-            ALTER TABLE sfc_user ADD device_id VARCHAR(255) DEFAULT NULL
+            CREATE TABLE sfc_user (id SERIAL NOT NULL, username VARCHAR(255) NOT NULL, firstname VARCHAR(255) NOT NULL, lastname VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, wallet_address VARCHAR(255) DEFAULT NULL, balance DOUBLE PRECISION NOT NULL, bonus BOOLEAN NOT NULL, password VARCHAR(255) NOT NULL, token VARCHAR(255) DEFAULT NULL, device_id VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id))
         SQL);
     }
 
@@ -32,7 +32,7 @@ final class Version20250509095322 extends AbstractMigration
             CREATE SCHEMA public
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE sfc_user DROP device_id
+            DROP TABLE sfc_user
         SQL);
     }
 }

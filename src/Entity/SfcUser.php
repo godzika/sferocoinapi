@@ -25,6 +25,9 @@ class SfcUser
     #[ORM\Column(length: 255)]
     private ?string $email = null;
 
+    #[ORM\Column(length: 255, nullable: true)] // Make nullable if not all users will have a wallet immediately
+    private ?string $walletAddress = null;
+
     #[ORM\Column]
     private ?float $balance = null;
 
@@ -152,4 +155,16 @@ class SfcUser
 
         return $this;
     }
+
+    public function getWalletAddress(): ?string
+    {
+        return $this->walletAddress;
+    }
+
+    public function setWalletAddress(?string $walletAddress): static
+    {
+        $this->walletAddress = $walletAddress;
+        return $this;
+    }
+
 }
